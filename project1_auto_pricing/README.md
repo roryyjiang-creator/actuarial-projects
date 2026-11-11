@@ -137,3 +137,30 @@ raised to large powers and 3-decimal rounding distorts the results. Severity use
 driver age, vehicle age, fuel and density, so those are the only severity factors in the tool.
 
 By bonus-malus band, actual/predicted ranged 0.97 to 1.12 in the five bands with 68 or more claims; the three highest bands (31 claims combined) are too thin to judge.
+
+## Final pure premium evaluation
+
+Frequency (Poisson GLM, exposure offset) x severity (Gamma GLM, capped at 100,000, weighted
+by claim count), fitted on the training split and scored on the held-out test split
+(`src/10_final_pure_premium.py`).
+
+| Model | Gini | Top/bottom decile loss | Worst decile miss |
+|---|---|---|---|
+| v1 frequency x severity | 0.300 | 5.1x | 21.5% |
+| v2 frequency x constant severity | 0.312 | 5.5x | 23.4% |
+| v2 frequency x severity model | 0.314 | 5.7x | 17.1% |
+
+- v2 improves risk ranking over v1 (Gini 0.314 vs 0.300). The severity model adds little
+  (0.002 Gini), consistent with its 0.35% deviance gain: frequency drives the pricing.
+- Actual loss per exposure year rises from 65 in the lowest predicted decile to 371 in the
+  highest (5.7x); the top decile generates about 28% of capped loss.
+- Decile-level calibration is noisy for loss data: an unranked constant model shows 20.8%
+  decile misses, so v2's 17.1% is within sampling noise.
+- Total capped loss is 3.3% below prediction for every model including the constant, so the
+  gap comes from lower loss in the test sample, not from the model. Including the large-loss
+  load (1.228 from training) the ratio is 0.926, because the test sample's uncapped-to-capped
+  ratio was about 1.18. The load is driven by a few very large claims and would need
+  multi-year estimation and smoothing in practice.
+
+Limitations: one random split, not out-of-time; no expenses, trend or profit loading;
+losses capped at 100,000 with a flat load rather than a fitted large-loss model.
