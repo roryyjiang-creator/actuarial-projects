@@ -87,3 +87,31 @@ Overdispersion (Pearson chi-square / df about 1.67) persists in every model, so 
 final confidence intervals use a quasi-Poisson fit. Region relativities are noisy
 where few policies exist (for example R43: 0.67 to 1.67), which would motivate
 regularization or credibility weighting.
+
+## Uncertainty check: bootstrap vs quasi-Poisson
+
+On a 100,000-policy sample (3,863 claims, Pearson chi2/df = 1.53), I compared 200-resample
+percentile bootstrap intervals with quasi-Poisson intervals for two relativities:
+
+| Term | Relativity | Bootstrap 95% | Quasi-Poisson 95% |
+|---|---|---|---|
+| Age 18-25 vs 46-55 | 0.824 | 0.737-0.916 | 0.691-0.983 |
+| Diesel vs Regular | 1.156 | 1.090-1.229 | 1.068-1.252 |
+
+Conclusions agree (Diesel is higher-frequency; young drivers are below base once
+bonus-malus is in the model). The bootstrap intervals are narrower than quasi-Poisson,
+so quasi-Poisson is the conservative choice for reported intervals. Next check: robust
+(sandwich) standard errors and more resamples.
+
+Robust (sandwich, HC0) intervals fall between the other two methods, and match the
+Poisson standard errors almost exactly for these terms, so the overdispersion (1.53)
+does not come from the age or fuel effects. I report the robust intervals:
+
+| Term | Relativity | Robust 95% |
+|---|---|---|
+| Age 18-25 vs 46-55 | 0.824 | 0.717-0.948 |
+| Diesel vs Regular | 1.156 | 1.082-1.235 |
+
+The quasi-Poisson intervals (0.691-0.983 and 1.068-1.252) are conservative for these
+terms because one scale factor is applied to every coefficient. The bootstrap (200
+resamples) is slightly narrower than the robust interval; more resamples would stabilise it.
