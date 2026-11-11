@@ -27,3 +27,15 @@ I checked the data before modeling and made these decisions:
 Claims were aggregated to one row per policy before joining to the policy table,
 to avoid double-counting exposure. Loss dollars were reconciled between the
 claims table and the model table.
+
+## Data preparation
+
+Each claim is capped at 100,000 (currency units, likely euros) before aggregating to the
+policy level. The cap removes 17.7% of total loss dollars (59.9M to 49.3M), so
+a large-loss load of about 1.215 (total losses / capped losses) is needed to recover the
+full cost. Handling the large-loss load is outside this model and noted as a limitation.
+
+The data is split 75/25 into train and test sets (random_state=42). Frequency is
+similar in both (0.0735 vs 0.0744 claims per exposure-year). Average severity differs
+by about 5% (1,887 vs 1,797), which I attribute to the small number of claims and
+skewed amounts in the test set.
