@@ -164,3 +164,6 @@ by claim count), fitted on the training split and scored on the held-out test sp
 
 Limitations: one random split, not out-of-time; no expenses, trend or profit loading;
 losses capped at 100,000 with a flat load rather than a fitted large-loss model.
+
+
+*Validate with a similar model on google
