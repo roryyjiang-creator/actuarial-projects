@@ -115,3 +115,25 @@ does not come from the age or fuel effects. I report the robust intervals:
 The quasi-Poisson intervals (0.691-0.983 and 1.068-1.252) are conservative for these
 terms because one scale factor is applied to every coefficient. The bootstrap (200
 resamples) is slightly narrower than the robust interval; more resamples would stabilise it.
+
+## Excel rating calculator
+
+`excel/auto_pricing_calculator.xlsx` (built by `src/09_build_excel_calculator.py`) turns the
+fitted GLMs into a rating tool:
+
+- **Rel** sheet: one row per model term (key = model|variable|level) with relativity and CI.
+- **Calculator** sheet: inputs for driver age, vehicle age/power, fuel, brand, region, density,
+  and bonus-malus. `XLOOKUP` pulls each relativity; frequency x severity x large-loss load
+  (1.228) gives the expected loss cost per policy.
+- **Reconciliation** sheet: 20,000 held-out test policies scored with the same Excel
+  formulas, summarised by bonus-malus band (actual vs predicted claims).
+
+Reconciliation result: 788 actual claims vs 772.7 predicted (ratio 1.020), matching an
+independent Python calculation. A 2% gap is within sampling noise (about 3.6% on 788 claims),
+so no rebalancing of the base rate was applied.
+
+Notes: relativities are saved at 6 decimals because continuous terms (e.g. log density) are
+raised to large powers and 3-decimal rounding distorts the results. Severity uses only
+driver age, vehicle age, fuel and density, so those are the only severity factors in the tool.
+
+By bonus-malus band, actual/predicted ranged 0.97 to 1.12 in the five bands with 68 or more claims; the three highest bands (31 claims combined) are too thin to judge.
