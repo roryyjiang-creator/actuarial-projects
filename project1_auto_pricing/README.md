@@ -39,3 +39,20 @@ The data is split 75/25 into train and test sets (random_state=42). Frequency is
 similar in both (0.0735 vs 0.0744 claims per exposure-year). Average severity differs
 by about 5% (1,887 vs 1,797), which I attribute to the small number of claims and
 skewed amounts in the test set.
+
+## Results
+
+Severity (Gamma GLM, log link, claim-count weights): rating variables add almost nothing.
+Test Gamma deviance improves 0.35% over a constant average. Only the 18-25 driver
+band stands out (relativity 1.18, 95% CI 1.01 to 1.38); with ten coefficients
+tested I treat it as weak evidence.
+
+Pure premium (frequency x severity, capped at 100,000): test Gini 0.295. Predicted
+and actual pure premium rise together across risk deciles, with noise in two
+middle deciles. Total predicted capped loss on the test set is 3.6% above actual
+(12.41M vs 11.98M), consistent with the lower average severity seen in the test
+split. A large-loss load of 1.228 (train total / capped losses) restores the
+dollars removed by the cap.
+
+Limitations: no trend or credibility adjustment; claim sizes are very dispersed so
+the Gamma assumption is rough; the large-loss load is a single flat factor.
