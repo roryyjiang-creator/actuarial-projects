@@ -1,0 +1,253 @@
+---
+title: "Aggregate loss simulation for an insurance portfolio"
+author: "Rory Jiang"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width = 7, fig.height = 4.5,
+                      message = FALSE, warning = FALSE)
+set.seed(2026)
+lam     <- 0.10   # expected claims per policy per year
+meanlog <- 8      # lognormal severity: mean of log(claim size)
+sdlog   <- 1.2    # lognormal severity: sd of log(claim size)
+nsim    <- 10000  # simulated years
+```
+
+## Model and assumptions
+
+Each policy has Poisson claim counts at rate `r lam` per year, so a portfolio of
+$n$ policies has $N \sim \text{Poisson}(n \cdot \lambda)$ claims. Each claim size is
+lognormal($\mu$ = `r meanlog`, $\sigma$ = `r sdlog`), independent of the others and of
+the count. Total annual loss is $S = X_1 + \dots + X_N$.
+
+Assumptions to keep in mind: all policies are identical, claims are independent, and
+there is no inflation, no catastrophe correlation and no parameter uncertainty.
+Real portfolios break each of these.
+
+## Simulate a 1,000-policy portfolio
+
+```{r simulate}
+sim_total <- function(n_pol, lam, meanlog, sdlog, nsim) {
+  replicate(nsim, {
+    k <- rpois(1, n_pol * lam)
+    sum(rlnorm(k, meanlog, sdlog))
+  })
+}
+n_pol <- 1000
+S <- sim_total(n_pol, lam, meanlog, sdlog, nsim)
+```
+
+```{r histogram}
+hist(S / 1000, breaks = 60, col = "grey85", border = "white",
+     main = "Simulated total annual loss, 1,000 policies",
+     xlab = "Total annual loss (thousands)")
+abline(v = mean(S) / 1000, lwd = 2)
+abline(v = quantile(S, 0.99) / 1000, lty = 2, lwd = 2, col = "firebrick")
+legend("topright", legend = c("Mean", "99th percentile"), lty = c(1, 2),
+       lwd = 2, col = c("black", "firebrick"), bty = "n")
+```
+
+## Check against theory
+
+For a compound Poisson sum with total claim rate $\Lambda = n\lambda$:
+$E[S] = \Lambda E[X]$ and $\text{Var}(S) = \Lambda E[X^2]$. For a lognormal,
+$E[X] = e^{\mu + \sigma^2/2}$ and $E[X^2] = e^{2\mu + 2\sigma^2}$.
+
+```{r theory}
+EX  <- exp(meanlog + sdlog^2 / 2)
+EX2 <- exp(2 * meanlog + 2 * sdlog^2)
+Lam <- n_pol * lam
+check <- data.frame(
+  quantity  = c("Mean of S", "Variance of S"),
+  simulated = c(mean(S), var(S)),
+  theory    = c(Lam * EX, Lam * EX2))
+check$pct_diff <- 100 * (check$simulated / check$theory - 1)
+knitr::kable(check, digits = 1, format.args = list(big.mark = ","))
+```
+
+The variance converges more slowly than the mean, because it is driven by the
+largest simulated claims, and the lognormal tail is heavy.
+
+## Bigger portfolios are more predictable
+
+The coefficient of variation (standard deviation divided by mean) of $S$ should fall like
+$1/\sqrt{n}$. For this model the exact value is
+$\text{CV} = e^{\sigma^2/2} / \sqrt{n\lambda}$.
+
+```{r lln}
+sizes <- c(100, 300, 1000, 3000, 10000)
+cv_tab <- data.frame(n_policies = sizes)
+cv_tab$cv_sim <- sapply(sizes, function(n) {
+  s <- sim_total(n, lam, meanlog, sdlog, nsim)
+  sd(s) / mean(s)
+})
+cv_tab$cv_theory <- exp(sdlog^2 / 2) / sqrt(sizes * lam)
+knitr::kable(cv_tab, digits = 3, format.args = list(big.mark = ","))
+```
+
+```{r lln-plot}
+plot(cv_tab$n_policies, cv_tab$cv_sim, log = "xy", pch = 19,
+     xlab = "Number of policies (log scale)",
+     ylab = "Coefficient of variation of annual loss (log scale)")
+lines(cv_tab$n_policies, cv_tab$cv_theory, lty = 2, lwd = 2, col = "firebrick")
+legend("topright", legend = c("Simulated", "Theory: 1/sqrt(n)"),
+       pch = c(19, NA), lty = c(NA, 2), col = c("black", "firebrick"), bty = "n")
+slope <- coef(lm(log(cv_sim) ~ log(n_policies), data = cv_tab))[2]
+```
+
+The fitted log-log slope is `r round(slope, 3)`; a value near $-0.5$ means the
+$1/\sqrt{n}$ law holds.
+
+## Fit the severity distribution by maximum likelihood
+
+Treat 5,000 simulated claims as observed data and estimate the lognormal parameters.
+For a lognormal the MLE is closed form: the mean and the (divide-by-n) standard
+deviation of the log claim sizes.
+
+```{r mle}
+x <- rlnorm(5000, meanlog, sdlog)
+lx <- log(x)
+mle <- c(meanlog = mean(lx), sdlog = sqrt(mean((lx - mean(lx))^2)))
+lfit <- MASS::fitdistr(x, "lognormal")
+gfit <- tryCatch(MASS::fitdistr(x, "gamma"), error = function(e) NULL)
+fits <- data.frame(
+  family = "Lognormal",
+  logLik = as.numeric(logLik(lfit)),
+  AIC = AIC(lfit))
+if (!is.null(gfit)) {
+  fits <- rbind(fits, data.frame(family = "Gamma",
+                                 logLik = as.numeric(logLik(gfit)), AIC = AIC(gfit)))
+}
+knitr::kable(data.frame(parameter = c("meanlog", "sdlog"),
+                        truth = c(meanlog, sdlog), closed_form_MLE = mle,
+                        fitdistr_estimate = as.numeric(lfit$estimate),
+                        std_error = as.numeric(lfit$sd)), digits = 4)
+knitr::kable(fits, digits = 1)
+```
+
+```{r qq, fig.width=9, fig.height=4.5}
+par(mfrow = c(1, 2))
+qqnorm(lx, main = "Lognormal fit: normal QQ of log(claims)")
+qqline(lx)
+if (!is.null(gfit)) {
+  q <- qgamma(ppoints(length(x)), shape = gfit$estimate["shape"],
+              rate = gfit$estimate["rate"])
+  plot(q, sort(x), log = "xy", main = "Gamma fit: QQ plot",
+       xlab = "Gamma quantiles", ylab = "Observed claims")
+  abline(0, 1, col = "firebrick")
+}
+par(mfrow = c(1, 1))
+```
+
+A Kolmogorov-Smirnov test with parameters estimated from the same data is too
+lenient, so I get the p-value by parametric bootstrap instead: simulate from the
+fitted model, refit, and see how often the KS statistic is as large as the observed one.
+
+```{r ks}
+ks_stat <- function(y, m, s) unname(ks.test(y, "plnorm", m, s)$statistic)
+obs <- ks_stat(x, mle["meanlog"], mle["sdlog"])
+boot_ks <- replicate(500, {
+  y <- rlnorm(length(x), mle["meanlog"], mle["sdlog"])
+  ly <- log(y)
+  ks_stat(y, mean(ly), sqrt(mean((ly - mean(ly))^2)))
+})
+p_boot <- mean(boot_ks >= obs)
+```
+
+Observed KS statistic `r round(obs, 4)`; bootstrap p-value `r round(p_boot, 3)`.
+Since the data really are lognormal here, a large p-value is expected. The value of
+the exercise is the method, and the Gamma QQ plot shows what a wrong family looks like.
+
+## Deductible and aggregate stop-loss
+
+A per-claim deductible $d$ makes the insurer pay $\max(X - d, 0)$ on each claim.
+An aggregate stop-loss with limit $L$ makes the insurer retain $\min(S, L)$ and the
+reinsurer pay $(S - L)_+$. I apply both to the same simulated years.
+
+```{r layers}
+d <- 5000
+sim_both <- function(n_pol, lam, meanlog, sdlog, nsim, d) {
+  out <- replicate(nsim, {
+    k <- rpois(1, n_pol * lam)
+    x <- rlnorm(k, meanlog, sdlog)
+    c(gross = sum(x), net_ded = sum(pmax(x - d, 0)))
+  })
+  t(out)
+}
+sims <- sim_both(n_pol, lam, meanlog, sdlog, nsim, d)
+L <- unname(quantile(sims[, "gross"], 0.95))
+scen <- list(
+  "Gross (no layers)"              = sims[, "gross"],
+  "Per-claim deductible"           = sims[, "net_ded"],
+  "Stop-loss only"                 = pmin(sims[, "gross"], L),
+  "Deductible + stop-loss"         = pmin(sims[, "net_ded"], L))
+layers <- data.frame(
+  scenario = names(scen),
+  mean = sapply(scen, mean),
+  sd   = sapply(scen, sd),
+  p99  = sapply(scen, quantile, probs = 0.99))
+rownames(layers) <- NULL
+knitr::kable(layers, digits = 0, format.args = list(big.mark = ","))
+```
+
+The deductible is `r format(d, big.mark = ",")` per claim; the stop-loss limit is the
+95th percentile of gross annual loss, `r format(round(L), big.mark = ",")`. The expected
+amount the reinsurer pays above that limit is
+`r format(round(mean(pmax(sims[, "gross"] - L, 0))), big.mark = ",")`.
+
+## How well can the 99th percentile be estimated?
+
+The 99th percentile is a typical capital metric, but it is hard to estimate from a
+short history. I draw histories of different lengths (years) from the simulated
+annual losses, bootstrap the 99th percentile of each, and compare with a
+100,000-year simulation as the reference.
+
+```{r p99}
+set.seed(7)
+truth <- unname(quantile(sim_total(n_pol, lam, meanlog, sdlog, 100000), 0.99))
+boot_ci <- function(y, B = 1000) {
+  b <- replicate(B, quantile(sample(y, replace = TRUE), 0.99))
+  c(estimate = unname(quantile(y, 0.99)),
+    lo = unname(quantile(b, 0.025)), hi = unname(quantile(b, 0.975)))
+}
+ms <- c(20, 100, 1000, 10000)
+res <- data.frame(years_of_history = ms,
+                  t(sapply(ms, function(m) boot_ci(sample(S, m)))))
+res$reference <- truth
+res$interval_width_pct_of_reference <- 100 * (res$hi - res$lo) / truth
+knitr::kable(res, digits = 0, format.args = list(big.mark = ","))
+```
+
+With few years of history the bootstrap interval is both wide and unreliable, because
+a 99th percentile estimated from 20 values is essentially the largest observation, and
+resampling cannot produce anything larger. The percentile bootstrap handles extreme
+quantiles poorly in small samples.
+
+## Conclusions
+
+Numbers below are from the run with seed 2026.
+
+- **Theory check.** Simulated mean matched theory (0.0% difference); simulated variance was
+  2.6% above theory, about what sampling error allows for a heavy-tailed sum.
+- **Diversification.** The coefficient of variation of annual loss falls like $1/\sqrt{n}$
+  (fitted log-log slope -0.504). The relative variability shrinks as the book grows, but only
+  because policies are assumed independent and identical.
+- **Severity fit.** Maximum likelihood recovered the lognormal parameters (7.983 vs 8, 1.222
+  vs 1.2); a parametric-bootstrap KS test gave p = 0.33.
+- **Deductible.** A 5,000 per-claim deductible cut expected loss 49% and the 99th percentile
+  35%, but raised the coefficient of variation from 0.20 to 0.34.
+- **Stop-loss.** A limit at the 95th percentile of gross loss (833,407) cost the reinsurer 4,053
+  in expected payments (0.66% of the mean) and cut the 99th percentile by 14%. Combined with the
+  deductible it never bound at the 99th percentile, so limits should be set against the
+  retained distribution.
+- **Tail estimation.** From 20 years of history the 99th-percentile estimate was 17% below the
+  100,000-year reference, with a narrow interval that missed it. From 100 years the interval was
+  19% wide. Short histories cannot pin down tail risk, which is why frequency and severity
+  models are fitted and simulated instead.
+
+Limitations: identical independent policies, no inflation, no catastrophe correlation, no
+parameter uncertainty, and severity parameters chosen by me rather than estimated from data.
