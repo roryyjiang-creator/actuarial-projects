@@ -39,7 +39,7 @@ sev = smf.glm(sev_formula, data=sev_train,
 print(sev.summary())
 
 ci = sev.conf_int()
-rel = pd.DataFrame({"relativity": np.exp(sev.params), "ci_low": np.exp(ci[0]), "ci_high": np.exp(ci[1])}).round(3)
+rel = pd.DataFrame({"relativity": np.exp(sev.params), "ci_low": np.exp(ci[0]), "ci_high": np.exp(ci[1])}).round(6)
 rel.to_csv("reports/severity_relativities.csv")
 print("\nSeverity relativities:\n", rel)
 

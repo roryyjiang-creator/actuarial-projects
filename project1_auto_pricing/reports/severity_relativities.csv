@@ -1,12 +1,12 @@
 ,relativity,ci_low,ci_high
-Intercept,1784.124,1499.93,2122.163
-"C(DrivAgeBand, Treatment(reference='46-55'))[T.18-25]",1.178,1.01,1.375
-"C(DrivAgeBand, Treatment(reference='46-55'))[T.26-35]",0.999,0.886,1.128
-"C(DrivAgeBand, Treatment(reference='46-55'))[T.36-45]",0.951,0.848,1.067
-"C(DrivAgeBand, Treatment(reference='46-55'))[T.56-65]",0.902,0.786,1.036
-"C(DrivAgeBand, Treatment(reference='46-55'))[T.66+]",1.119,0.964,1.3
-"C(VehAgeBand, Treatment(reference='11+'))[T.0-2]",1.017,0.906,1.142
-"C(VehAgeBand, Treatment(reference='11+'))[T.3-5]",0.956,0.85,1.076
-"C(VehAgeBand, Treatment(reference='11+'))[T.6-10]",0.984,0.885,1.093
-"C(VehGas, Treatment(reference='Regular'))[T.Diesel]",1.0,0.921,1.085
-LogDensity,1.01,0.988,1.032
+Intercept,1784.123665,1499.930365,2122.163352
+"C(DrivAgeBand, Treatment(reference='46-55'))[T.18-25]",1.17822,1.009732,1.374823
+"C(DrivAgeBand, Treatment(reference='46-55'))[T.26-35]",0.99939,0.885663,1.127721
+"C(DrivAgeBand, Treatment(reference='46-55'))[T.36-45]",0.951327,0.848377,1.066771
+"C(DrivAgeBand, Treatment(reference='46-55'))[T.56-65]",0.902169,0.785814,1.035754
+"C(DrivAgeBand, Treatment(reference='46-55'))[T.66+]",1.119099,0.963541,1.299772
+"C(VehAgeBand, Treatment(reference='11+'))[T.0-2]",1.016956,0.905607,1.141995
+"C(VehAgeBand, Treatment(reference='11+'))[T.3-5]",0.956392,0.850254,1.075781
+"C(VehAgeBand, Treatment(reference='11+'))[T.6-10]",0.983787,0.885451,1.093044
+"C(VehGas, Treatment(reference='Regular'))[T.Diesel]",0.999983,0.921382,1.085289
+LogDensity,1.010029,0.988084,1.032461

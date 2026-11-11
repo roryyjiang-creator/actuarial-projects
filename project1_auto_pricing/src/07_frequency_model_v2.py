@@ -50,7 +50,7 @@ for name, f in formulas.items():
     dev0 = mean_poisson_deviance(y, np.full(len(te), null_rate), sample_weight=te.Exposure)
     te["decile"] = pd.qcut(te["rate"].rank(method="first"), 10, labels=False)
     cal = te.groupby("decile").agg(exposure=("Exposure", "sum"), actual=("ClaimNb", "sum"), predicted=("pred", "sum"))
-    cal["pred_vs_actual"] = (cal.predicted / cal.actual - 1).round(3)
+    cal["pred_vs_actual"] = (cal.predicted / cal.actual - 1).round(6)
     models[name], cals[name] = m, cal
     rows.append({"model": name, "coefficients": len(m.params),
                  "deviance_improvement": f"{1 - dev / dev0:.2%}",
@@ -66,19 +66,19 @@ age = {}
 for name, m in models.items():
     p = m.params[m.params.index.str.contains("DrivAgeBand")]
     p.index = p.index.str.extract(r"\[T\.(.*)\]")[0]
-    age[name] = np.exp(p).round(3)
+    age[name] = np.exp(p).round(6)
 print("\n=== Driver-age relativities (base 46-55) ===")
 print(pd.DataFrame(age))
 
 v2 = "v2: banded BM + power + brand + region"
 print("\n=== Calibration by decile, v2 ===")
-print(cals[v2].round(3))
+print(cals[v2].round(6))
 
 # Final model: refit with scale='X2' (quasi-Poisson) so confidence intervals allow for overdispersion
 final = smf.glm(formulas[v2], data=train, family=sm.families.Poisson(),
                 offset=np.log(train.Exposure)).fit(scale="X2")
 ci = final.conf_int()
-rel = pd.DataFrame({"relativity": np.exp(final.params), "ci_low": np.exp(ci[0]), "ci_high": np.exp(ci[1])}).round(3)
+rel = pd.DataFrame({"relativity": np.exp(final.params), "ci_low": np.exp(ci[0]), "ci_high": np.exp(ci[1])}).round(6)
 rel.to_csv("reports/frequency_v2_relativities.csv")
 print("\nSaved reports/frequency_v2_relativities.csv (quasi-Poisson intervals)")
 print(rel.to_string())
