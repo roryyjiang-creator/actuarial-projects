@@ -41,7 +41,22 @@ by about 5% (1,887 vs 1,797), which I attribute to the small number of claims an
 skewed amounts in the test set.
 
 ## Results
+## Frequency model (Poisson GLM, exposure offset)
 
+Poisson GLM with log(exposure) as offset; predictors: driver age band, vehicle age
+band, area, fuel type, log density, bonus-malus. Test Poisson deviance improves 3.86%
+over a constant rate; test Gini 0.274. Strongest predictor: bonus-malus (+2.7% per
+point). Diesel +20%. Area is not significant once density is included.
+
+Findings: (1) driver age relativities below 1 for young drivers, likely because
+bonus-malus already captures claims history; to be checked by refitting without it.
+(2) Pearson chi-square / df is about 1.6, suggesting overdispersion, so the confidence
+intervals are probably too narrow. (3) Calibration by decile is good in total (1.2%)
+but under-predicts deciles 6-7 by 17-25% and over-predicts deciles 0-1 by about 13%,
+so the model is missing structure (candidates: non-linear bonus-malus, vehicle power,
+region, brand).
+
+## Severity model (Gamma GLM)
 Severity (Gamma GLM, log link, claim-count weights): rating variables add almost nothing.
 Test Gamma deviance improves 0.35% over a constant average. Only the 18-25 driver
 band stands out (relativity 1.18, 95% CI 1.01 to 1.38); with ten coefficients

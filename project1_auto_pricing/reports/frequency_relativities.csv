@@ -1,0 +1,18 @@
+,relativity,ci_low,ci_high
+Intercept,0.01,0.008,0.012
+"C(DrivAgeBand, Treatment(reference='46-55'))[T.18-25]",0.785,0.738,0.835
+"C(DrivAgeBand, Treatment(reference='46-55'))[T.26-35]",0.662,0.633,0.692
+"C(DrivAgeBand, Treatment(reference='46-55'))[T.36-45]",0.877,0.843,0.913
+"C(DrivAgeBand, Treatment(reference='46-55'))[T.56-65]",0.89,0.848,0.934
+"C(DrivAgeBand, Treatment(reference='46-55'))[T.66+]",0.895,0.849,0.943
+"C(VehAgeBand, Treatment(reference='11+'))[T.0-2]",1.065,1.022,1.109
+"C(VehAgeBand, Treatment(reference='11+'))[T.3-5]",1.127,1.081,1.174
+"C(VehAgeBand, Treatment(reference='11+'))[T.6-10]",1.198,1.154,1.243
+"C(Area, Treatment(reference='C'))[T.A]",0.918,0.841,1.003
+"C(Area, Treatment(reference='C'))[T.B]",0.954,0.894,1.017
+"C(Area, Treatment(reference='C'))[T.D]",1.05,0.986,1.119
+"C(Area, Treatment(reference='C'))[T.E]",1.095,0.987,1.215
+"C(Area, Treatment(reference='C'))[T.F]",0.945,0.793,1.125
+"C(VehGas, Treatment(reference='Regular'))[T.Diesel]",1.204,1.17,1.239
+LogDensity,1.05,1.016,1.086
+BonusMalus,1.027,1.027,1.028
