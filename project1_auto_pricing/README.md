@@ -71,3 +71,19 @@ dollars removed by the cap.
 
 Limitations: no trend or credibility adjustment; claim sizes are very dispersed so
 the Gamma assumption is rough; the large-loss load is a single flat factor.
+
+## Frequency model v2
+
+Adding banded bonus-malus, vehicle power, brand and region (and dropping area, which
+overlaps with density) improves the test Poisson deviance from 3.86% to 4.70% and the
+Gini from 0.274 to 0.294. The worst decile miss falls from 19.8% to 9.3% (predicted
+vs actual); total predicted claims are 1.3% below actual.
+
+Check on the young-driver result: with bonus-malus in the model the 18-25 relativity is
+0.785, but removing bonus-malus changes it to 2.03. Bonus-malus carries most of the
+claims-history risk, so age effects here are conditional on it.
+
+Overdispersion (Pearson chi-square / df about 1.67) persists in every model, so the
+final confidence intervals use a quasi-Poisson fit. Region relativities are noisy
+where few policies exist (for example R43: 0.67 to 1.67), which would motivate
+regularization or credibility weighting.
